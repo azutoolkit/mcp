@@ -11,4 +11,3 @@ shards:
   sqlite3:
     git: https://github.com/crystal-lang/crystal-sqlite3.git
     version: 0.23.0
-

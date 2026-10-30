@@ -9,7 +9,7 @@ module AzuMCP
       size idle checked_out checkout_wait_ms max_size hits misses reads writes deletes operations hit_rate
       sent delivered failed_count registered enabled_features features runtime database cache components mailers sessions auth
       sql query normalized_sql process port crystal handler tracing endpoints profiler leak_suspected detail section recent_errors
-      gets sets written_bytes breakdown operation store hit event type avg_age memory_delta
+      gets sets written_bytes breakdown operation store hit event outcome type avg_age memory_delta
       tables columns nullable primary foreign_key schema_name migration_version pool_waits
       in_flight max pool_wait_ms slow class file line trace id jid queue failed_at redrivable state nested
       steps attempt depends_on workflow_id worker_id heartbeat_at last_seen concurrency busy processed rate delivery
@@ -48,6 +48,10 @@ module AzuMCP
         return AzuMCP.json({status: "disabled"})
       end
       total = payload.as_h?.try(&.["total"]?).try(&.as_i64?)
+      if captured = payload.as_h?.try(&.["captured_at"]?).try(&.as_s?)
+        sampled = Time.parse_rfc3339(captured) rescue nil
+        age = Math.max(age, (Time.utc - sampled).total_seconds) if sampled
+      end
       AzuMCP.json({status: age > 10 ? "stale" : (total == 0 ? "empty" : "available"), age_seconds: age, data: filter(payload),
                    note: "Retained telemetry, not a full audit log. Redis connectivity is not worker health. Auth events are not session counts."})
     end
