@@ -14,12 +14,15 @@ module AzuMCP
     def initialize(@workspace, @action, @arguments, @fingerprint, @details, @target = nil)
       @id = Random::Secure.hex(16)
       @expires_at = Time.utc.to_unix + 900
-      @digest = Digest::SHA256.hexdigest({@id, @workspace, @action, @arguments, @fingerprint, @target, @expires_at, @details}.to_json)
+      @digest = content_digest
     end
 
     def verify! : Nil
-      expected = Digest::SHA256.hexdigest({@id, @workspace, @action, @arguments, @fingerprint, @target, @expires_at, @details}.to_json)
-      raise ArgumentError.new("Plan content no longer matches its digest; prepare a new plan") unless expected == @digest
+      raise ArgumentError.new("Plan content no longer matches its digest; prepare a new plan") unless content_digest == @digest
+    end
+
+    private def content_digest : String
+      Digest::SHA256.hexdigest({@id, @workspace, @action, @arguments, @fingerprint, @target, @expires_at, @details}.to_json)
     end
   end
 

@@ -31,7 +31,7 @@ Coordinated core changes must land before enabling the corresponding production 
 
 ### Coordinated adapters and protocol
 
-- Native boundary/process suite: 20 passing examples, including persisted-plan digest tampering and model-facing generated-secret redaction. Independent framing tests cover malformed initialization recovery, omitted params, oversized frames, compiler cancellation and descendant cleanup.
+- Native boundary/process suite: 27 passing examples, including persisted-plan digest tampering, model-facing generated-secret redaction, and inspection policy across trust, production and provider states. Independent framing tests cover malformed initialization recovery, omitted params, oversized frames, compiler cancellation and descendant cleanup.
 - CLI: the final development/control/bridge regression run passed 36 examples; generator-shadow validation passed 9 examples. Earlier affected suites also passed, along with the 49-page documentation check. These counts overlap and must not be added together.
 - CQL: 32 SQLite migration/transaction examples and 8 live PostgreSQL lock examples passed. The reviewed-plan race commits once and rejects the waiter after the version set changes. Targeted Ameba and GitBook checks passed.
 - JoobQ: 21 DLQ examples passed; separate real-Redis runs completed reviewed queue pause/resume and exact-member replay. A real Pro workflow was visible with its running state and pending step.
