@@ -49,3 +49,5 @@ node /tmp/azu-mcp-sdk/soak.mjs "$PWD/bin/azu-mcp" CONFIG WORKSPACE 1800
 ```
 
 This sends concurrent searches, snapshot reads and capability requests, with periodic index refreshes. It records latency, Linux RSS and clean exit. Development hardware: Linux x86_64, AMD EPYC 9V74, five visible CPUs with a four-CPU cgroup quota; Crystal 1.22.1. The complete concurrent run is recorded separately when it finishes; short smoke tests are not substitutes.
+
+Hosted CI passed the Linux/macOS 15 matrix on Crystal 1.22.1 and `latest` for the native preview. The initial macOS 14 jobs were cancelled before execution by GitHub's scheduled runner-image retirement brownout; the workflow now uses macOS 15. CLI hosted checks also exercised generated API/web/Spark apps and three JoobQ adapter revisions. CQL and JoobQ hosted matrices passed for the coordinated adapter PRs.

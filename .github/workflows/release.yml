@@ -14,8 +14,10 @@ jobs:
         include:
           - os: ubuntu-24.04
             platform: linux-x86_64
+            architecture: x86_64
           - os: macos-15
             platform: macos-arm64
+            architecture: arm64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -37,7 +39,8 @@ jobs:
           python3 scripts/protocol_test.py "$PWD/bin/azu-mcp" /tmp/azu-mcp-fixture/config.json fixture
       - name: Archive and checksum
         run: |
-          tar -czf azu-mcp-${{ matrix.platform }}.tar.gz -C bin azu-mcp
+          test "$(uname -m)" = "${{ matrix.architecture }}"
+          tar -czf azu-mcp-${{ matrix.platform }}.tar.gz LICENSE README.md -C bin azu-mcp
           shasum -a 256 azu-mcp-${{ matrix.platform }}.tar.gz > azu-mcp-${{ matrix.platform }}.sha256
       - uses: actions/upload-artifact@v4
         with:
