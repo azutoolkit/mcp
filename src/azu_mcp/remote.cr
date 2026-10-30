@@ -23,6 +23,9 @@ module AzuMCP
       raise ArgumentError.new("Remote journal capacity reached; archive resolved records before planning more work") if Dir.glob(File.join(@config.state_dir, "remote-*.json")).size >= Operations::MAX_PLANS
       target = @config.targets[target_id]? || raise ArgumentError.new("Unknown target")
       data = request(target_id, AzuMCP.json({method: "plan", workspace: target.workspace, action: action, arguments: args}), 180.seconds)
+      received = Plan.from_json(data.to_json)
+      received.verify!
+      raise ArgumentError.new("Remote plan does not match the requested operation") unless received.workspace == target.workspace && received.action == action && received.arguments == args
       id = data["id"].as_s
       valid_id!(id)
       @config.prepare
@@ -36,6 +39,9 @@ module AzuMCP
       plan = JSON.parse(File.read(path(id)))
       target = @config.targets[plan["target"].as_s]? || raise ArgumentError.new("Target no longer configured")
       raise ArgumentError.new("Target configuration changed; prepare a new plan") unless plan["target_digest"].as_s == Digest::SHA256.hexdigest(target.to_yaml)
+      reviewed = Plan.from_json(plan["remote"].to_json)
+      reviewed.verify!
+      raise ArgumentError.new("Remote plan identifier or workspace changed") unless reviewed.id == id && reviewed.workspace == target.workspace
       plan
     end
 

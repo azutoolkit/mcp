@@ -149,3 +149,18 @@ describe "Model-facing plan redaction" do
     AzuMCP::Redaction.text(%({"token":"private-token"})).should_not contain("private-token")
   end
 end
+
+describe "Review digest integrity" do
+  it "rejects changed persisted plan contents even when its old digest is retained" do
+    fixture do |config, root|
+      operations = AzuMCP::Operations.new(config)
+      plan = operations.plan("app", "build", [] of String)
+      file = File.join(config.state_dir, "operations", "#{plan.id}.plan.json")
+      changed = JSON.parse(File.read(file))
+      changed.as_h["action"] = JSON::Any.new("doctor")
+      File.write(file, changed.to_json)
+      expect_raises(ArgumentError, /no longer matches/) { operations.load_plan(plan.id) }
+      expect_raises(ArgumentError, /no longer matches/) { operations.approve(plan.id, plan.digest) }
+    end
+  end
+end

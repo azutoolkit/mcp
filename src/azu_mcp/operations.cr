@@ -16,6 +16,11 @@ module AzuMCP
       @expires_at = Time.utc.to_unix + 900
       @digest = Digest::SHA256.hexdigest({@id, @workspace, @action, @arguments, @fingerprint, @target, @expires_at, @details}.to_json)
     end
+
+    def verify! : Nil
+      expected = Digest::SHA256.hexdigest({@id, @workspace, @action, @arguments, @fingerprint, @target, @expires_at, @details}.to_json)
+      raise ArgumentError.new("Plan content no longer matches its digest; prepare a new plan") unless expected == @digest
+    end
   end
 
   class Operation
@@ -175,7 +180,10 @@ module AzuMCP
 
     def load_plan(id : String) : Plan
       valid_id!(id)
-      Plan.from_json(File.read(plan_path(id)))
+      plan = Plan.from_json(File.read(plan_path(id)))
+      raise ArgumentError.new("Plan identifier mismatch") unless plan.id == id
+      plan.verify!
+      plan
     end
 
     def wait(id : String) : JSON::Any
