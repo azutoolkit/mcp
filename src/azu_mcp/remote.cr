@@ -15,7 +15,9 @@ module AzuMCP
               "-o", "ForkAfterAuthentication=no", "-o", "SendEnv=-*", "-o", "ConnectTimeout=5",
               "-o", "ServerAliveInterval=5", "-o", "ServerAliveCountMax=1", "--", target.host, command]
       response = ProcessRunner.run("ssh", args, Dir.current, deadline, body.to_json, raw_output: true) { |_| }
-      raise IO::Error.new("Remote connection failed; reconcile operation status before retrying") unless response.exit_code == 0 && !response.truncated
+      unless response.exit_code == 0 && !response.truncated
+        raise IO::Error.new("SSH runner failed: #{response.error[0, 2048]}. Reconcile any dispatched operation before retrying")
+      end
       JSON.parse(response.output)
     end
 

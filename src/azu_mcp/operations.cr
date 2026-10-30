@@ -85,7 +85,9 @@ module AzuMCP
         details = JSON.parse(response.output)
       elsif action.starts_with?("db:") || action.starts_with?("jobs:")
         response = ProcessRunner.run(w.azu, ["mcp", "bridge", "precondition", action] + args, w.canonical, 90.seconds, env: {"CRYSTAL_ENV" => w.environment, "AZU_ENV" => w.environment}, raw_output: true) { |_| }
-        raise ArgumentError.new("Installed CLI does not support a verified precondition for this action") unless response.exit_code == 0 && !response.truncated
+        unless response.exit_code == 0 && !response.truncated
+          raise ArgumentError.new("Cannot verify operation preconditions: #{response.error[0, 4096]}")
+        end
         details = JSON.parse(response.output)
       end
       plan = Plan.new(id, action, args, fingerprint(w), details)
