@@ -134,3 +134,18 @@ describe "Durable operation records" do
     end
   end
 end
+
+describe "Model-facing plan redaction" do
+  it "hides generated credentials without altering stored plan bytes" do
+    plan = AzuMCP.json({id: "review", details: {files: [
+      {path: ".env", content: "SESSION_SECRET=never-export-this", after_sha256: "digest"},
+      {path: "src/config.cr", content: "password = \"also-private\""},
+    ]}})
+    public_plan = AzuMCP::Redaction.public_view(plan)
+    public_plan.to_json.should_not contain("never-export-this")
+    public_plan.to_json.should_not contain("also-private")
+    public_plan["details"]["files"][0]["after_sha256"].as_s.should eq("digest")
+    plan["details"]["files"][0]["content"].as_s.should contain("never-export-this")
+    AzuMCP::Redaction.text(%({"token":"private-token"})).should_not contain("private-token")
+  end
+end

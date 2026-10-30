@@ -43,7 +43,7 @@ module AzuMCP
                     end
             raise ArgumentError.new("Invalid argument #{key}") unless valid
           end
-          value = block.call(args)
+          value = Redaction.public_view(block.call(args))
           value = AzuMCP.json({result: value}) unless value.as_h?
           body = value.to_json
           raise ArgumentError.new("Response exceeds 1 MiB; narrow your request") if body.bytesize > MAX_FILE
@@ -161,7 +161,7 @@ module AzuMCP
                    when "operations"   then @operations.recent(id)
                    else                     @catalog.inspect(id)
                    end
-            body = data.to_json
+            body = Redaction.public_view(data).to_json
             raise ArgumentError.new("Resource exceeds 1 MiB; use a focused tool") if body.bytesize > MAX_FILE
             MCP::Protocol::ReadResourceResult.new([MCP::Protocol::TextResourceContents.new(uri, body, "application/json")] of MCP::Protocol::ResourceContents)
           end

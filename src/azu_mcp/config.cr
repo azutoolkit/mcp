@@ -133,8 +133,27 @@ module AzuMCP
 
     def self.text(value : String) : String
       value.gsub(/([a-z]+:\/\/)[^\s\/@]+:[^\s\/@]+@/i, "\\1[redacted]@")
-        .gsub(/((?:password|secret|token|authorization|api_key)\s*[=:]\s*)[^\s,;]+/i, "\\1[redacted]")
+        .gsub(/((?:password|passwd|secret|token|authorization|api_key)["']?\s*[=:]\s*)(?:"[^"\n]*"|'[^'\n]*'|[^\s,;]+)/i, "\\1[redacted]")
         .gsub(/Bearer\s+[^\s]+/i, "Bearer [redacted]")
+    end
+
+    # Stored plans keep exact bytes for hash revalidation and local review.
+    # Model-facing previews must not disclose generated .env credentials.
+    def self.public_view(value : JSON::Any, depth = 0) : JSON::Any
+      return JSON::Any.new("[truncated]") if depth > 32
+      case raw = value.raw
+      when Hash
+        sensitive_file = raw["path"]?.try(&.as_s?).try { |path| path.matches?(/(?:^|\/)\.env|secret|credential|\.pem$|\.key$/i) }
+        JSON::Any.new(raw.to_h do |key, child|
+          {key, key.matches?(SENSITIVE) || (key == "content" && sensitive_file) ? JSON::Any.new("[redacted]") : public_view(child, depth + 1)}
+        end)
+      when Array
+        JSON::Any.new(raw.map { |child| public_view(child, depth + 1) })
+      when String
+        JSON::Any.new(text(raw))
+      else
+        value
+      end
     end
   end
 end

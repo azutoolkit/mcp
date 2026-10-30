@@ -20,3 +20,5 @@ Responses distinguish `available`, `empty`, `disabled`, `unavailable`, and `stal
 The server filters fields, bounds collections, removes sensitive payloads, and normalizes SQL literals. Production snapshots should already be sanitized by the existing read-only monitoring publisher. This server does not enable the development dashboard in production.
 
 Optional cache, mailer, session and component integrations must publish their existing telemetry. No sending email, revoking sessions, or arbitrary SQL execution is exposed. Redis connectivity must never be interpreted as worker health.
+
+Authentication frames are coalesced with the application snapshot, retain their own capture time, and are cleared when the app process changes. A source that stops reporting becomes stale even while other application metrics continue arriving. Generated `.env` file contents are hidden from model-facing generator previews; exact bytes remain in the private plan for terminal review and hash-checked application.

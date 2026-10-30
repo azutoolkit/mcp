@@ -9,7 +9,7 @@ module AzuMCP
       size idle checked_out checkout_wait_ms max_size hits misses reads writes deletes operations hit_rate
       sent delivered failed_count registered enabled_features features runtime database cache components mailers sessions auth
       sql query normalized_sql process port crystal handler tracing endpoints profiler leak_suspected detail section recent_errors
-      gets sets written_bytes breakdown operation store hit event outcome type avg_age memory_delta
+      gets sets get set delete written_bytes breakdown operation store hit event outcome type avg_age memory_delta
       tables columns nullable primary foreign_key schema_name migration_version pool_waits
       in_flight max pool_wait_ms slow class file line trace id jid queue failed_at redrivable state nested
       steps attempt depends_on workflow_id worker_id heartbeat_at last_seen concurrency busy processed rate delivery
