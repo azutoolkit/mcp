@@ -1,0 +1,14 @@
+version: 2.0
+shards:
+  db:
+    git: https://github.com/crystal-lang/crystal-db.git
+    version: 0.14.0
+
+  mcp:
+    git: https://github.com/spider-gazelle/mcp.cr.git
+    version: 0.2.0+git.commit.d6ca3e5a3ad37e394af7cf91a2c0717f73cd232f
+
+  sqlite3:
+    git: https://github.com/crystal-lang/crystal-sqlite3.git
+    version: 0.23.0
+

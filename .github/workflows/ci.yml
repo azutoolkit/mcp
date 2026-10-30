@@ -1,0 +1,51 @@
+name: Native MCP checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14]
+        crystal: ['1.22.1', latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: crystal-lang/install-crystal@v1
+        with:
+          crystal: ${{ matrix.crystal }}
+      - name: Linux libraries
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev libssl-dev libyaml-dev libgc-dev
+      - name: macOS libraries
+        if: runner.os == 'macOS'
+        run: brew install sqlite openssl@3 libyaml bdw-gc pkg-config
+      - run: shards install
+      - run: crystal tool format --check src spec
+      - run: shards build
+      - run: AZU_MCP_EXECUTABLE="$PWD/bin/azu-mcp" crystal spec
+      - run: python3 scripts/check_docs.py
+      - name: Independent protocol client
+        run: |
+          python3 scripts/create_fixture.py /tmp/azu-mcp-fixture
+          python3 scripts/protocol_test.py "$PWD/bin/azu-mcp" /tmp/azu-mcp-fixture/config.json fixture
+          python3 scripts/protocol_boundaries.py "$PWD/bin/azu-mcp"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: SDK interoperability
+        run: |
+          npm install --prefix /tmp/azu-mcp-sdk @modelcontextprotocol/sdk@1.32.2
+          cp scripts/sdk_client.mjs /tmp/azu-mcp-sdk/check.mjs
+          node /tmp/azu-mcp-sdk/check.mjs "$PWD/bin/azu-mcp" /tmp/azu-mcp-fixture/config.json fixture
+      - name: Bounded workload smoke
+        if: matrix.crystal == '1.22.1'
+        run: |
+          cp scripts/concurrent_soak.mjs /tmp/azu-mcp-sdk/soak.mjs
+          node /tmp/azu-mcp-sdk/soak.mjs "$PWD/bin/azu-mcp" /tmp/azu-mcp-fixture/config.json fixture 60
