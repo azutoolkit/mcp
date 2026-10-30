@@ -1,0 +1,64 @@
+name: Preview release binaries
+on:
+  push:
+    tags: ['v0.*']
+permissions:
+  contents: read
+jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+  package:
+    needs: checks
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: linux-x86_64
+            architecture: x86_64
+          - os: macos-15
+            platform: macos-arm64
+            architecture: arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify tag matches manifest
+        shell: bash
+        run: test "${GITHUB_REF_NAME#v}" = "$(sed -n 's/^version:[[:space:]]*//p' shard.yml)"
+      - uses: crystal-lang/install-crystal@v1
+        with:
+          crystal: '1.22.1'
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev libssl-dev libyaml-dev libgc-dev
+      - if: runner.os == 'macOS'
+        run: brew install sqlite openssl@3 libyaml bdw-gc pkg-config
+      - run: shards install && shards build --release
+      - run: AZU_MCP_EXECUTABLE="$PWD/bin/azu-mcp" crystal spec
+      - name: Protocol gate
+        run: |
+          python3 scripts/create_fixture.py /tmp/azu-mcp-fixture
+          python3 scripts/protocol_test.py "$PWD/bin/azu-mcp" /tmp/azu-mcp-fixture/config.json fixture
+      - name: Archive and checksum
+        run: |
+          test "$(uname -m)" = "${{ matrix.architecture }}"
+          tar -czf azu-mcp-${{ matrix.platform }}.tar.gz LICENSE README.md -C bin azu-mcp
+          shasum -a 256 azu-mcp-${{ matrix.platform }}.tar.gz > azu-mcp-${{ matrix.platform }}.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: azu-mcp-${{ matrix.platform }}
+          path: |
+            azu-mcp-*.tar.gz
+            azu-mcp-*.sha256
+  publish:
+    needs: package
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: azu-mcp-*
+          path: artifacts
+          merge-multiple: true
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" artifacts/* --repo "$GITHUB_REPOSITORY" --prerelease --generate-notes
